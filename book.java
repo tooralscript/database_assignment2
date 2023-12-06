@@ -3,7 +3,7 @@ import java.util.Scanner;
 
 public class bookstore {
 
-    private static final String DATABASE_URL = "jdbc:postgresql://localhost:5433/test_database";
+    private static final String DATABASE_URL = "jdbc:postgresql://localhost:5433/turalhasanov";
     private static final String DB_USER = "turalhasanov";
     private static final String DB_PASSWORD = "";
 
@@ -12,13 +12,14 @@ public class bookstore {
              Connection conn = DriverManager.getConnection(DATABASE_URL, DB_USER, DB_PASSWORD)) {
 
             System.out.println("Please keep in mind to create an author and then a book, also a customer and then an order.\nBecause those are interrelated, and have foreign keys pointing to each other.\nIn case you ignore it, you will have errors while performing operations on the database");
-            System.out.println("Choose an action: \n1. Create Book\n2. Create Author\n3. Create Customer\n4. Create Order\n5. Retrieve\n6. Update\n7. Delete\n8 - Get Metadata for individual table\n");
+            System.out.println("Choose an action: \n1. Create Author\n2. Create Book\n3. Create Customer\n4. Create Order\n5. Retrieve\n6. Update\n7. Delete\n8 - Get Metadata for individual table\n");
             String userInput = scanner.nextLine();
 
             if (userInput.equals("1")) {
-                addBook(scanner, conn);
-            } else if (userInput.equals("2")) {
                 addAuthor(scanner, conn);
+            } else if (userInput.equals("2")) {
+
+                addBook(scanner, conn);
             } else if (userInput.equals("3")) {
                 addCustomer(scanner, conn);
             } else if (userInput.equals("4")) {
@@ -42,7 +43,7 @@ public class bookstore {
         }
     }
 
-    
+
 private static void addBook(Scanner scanner, Connection connection) throws SQLException {
     System.out.println("Inserting a new book.");
     System.out.print("Enter book ID: ");
@@ -54,7 +55,7 @@ private static void addBook(Scanner scanner, Connection connection) throws SQLEx
     System.out.print("Enter author ID: ");
     int authorId = Integer.parseInt(scanner.nextLine());
 
-    String insertBookSql = "INSERT INTO Books (book_id, name, quantity, author_id) VALUES (?, ?, ?, ?)";
+    String insertBookSql = "INSERT INTO Books (book_id, book_title, book_stock, author_id) VALUES (?, ?, ?, ?)";
     try (PreparedStatement insertBookStmt = connection.prepareStatement(insertBookSql)) {
         insertBookStmt.setInt(1, bookId);
         insertBookStmt.setString(2, bookName);
@@ -74,7 +75,7 @@ private static void addAuthor(Scanner scanner, Connection connection) throws SQL
     System.out.print("Enter author's name: ");
     String authorName = scanner.nextLine();
 
-    String insertAuthorSql = "INSERT INTO Authors (author_id, name) VALUES (?, ?)";
+    String insertAuthorSql = "INSERT INTO Authors (author_id, author_name) VALUES (?, ?)";
     try (PreparedStatement insertAuthorStmt = connection.prepareStatement(insertAuthorSql)) {
         insertAuthorStmt.setInt(1, authorId);
         insertAuthorStmt.setString(2, authorName);
@@ -91,14 +92,11 @@ private static void addCustomer(Scanner scanner, Connection connection) throws S
     int customerId = Integer.parseInt(scanner.nextLine());
     System.out.print("Enter customer's name: ");
     String customerName = scanner.nextLine();
-    System.out.print("Enter customer's age: ");
-    int customerAge = Integer.parseInt(scanner.nextLine());
 
-    String insertCustomerSql = "INSERT INTO Customers (customer_id, name, age) VALUES (?, ?, ?)";
+    String insertCustomerSql = "INSERT INTO Customers (customer_id, customer_name) VALUES (?, ?)";
     try (PreparedStatement insertCustomerStmt = connection.prepareStatement(insertCustomerSql)) {
         insertCustomerStmt.setInt(1, customerId);
         insertCustomerStmt.setString(2, customerName);
-        insertCustomerStmt.setInt(3, customerAge);
         insertCustomerStmt.executeUpdate();
         System.out.println("Customer added successfully.");
     }
@@ -120,9 +118,9 @@ private static void addCustomer(Scanner scanner, Connection connection) throws S
         System.out.print("Enter order quantity: ");
         int orderQuantity = Integer.parseInt(scanner.nextLine());
 
-        String insertOrderSql = "INSERT INTO Orders (order_id, payment, customer_id, book_id, orders_quantity) VALUES (?, ?, ?, ?, ?)";
-        String checkStockSql = "SELECT quantity FROM Books WHERE book_id = ?";
-        String updateQuantitySql = "UPDATE Books SET quantity = quantity - ? WHERE book_id = ?";
+        String insertOrderSql = "INSERT INTO Orders (order_id, payment_amount, customer_id, book_id, order_quantity) VALUES (?, ?, ?, ?, ?)";
+        String checkStockSql = "SELECT order_quantity FROM Books WHERE book_id = ?";
+        String updateQuantitySql = "UPDATE Books SET order_quantity = order_quantity - ? WHERE book_id = ?";
 
         try (PreparedStatement checkStockStmt = connection.prepareStatement(checkStockSql)) {
 
@@ -153,21 +151,21 @@ private static void addCustomer(Scanner scanner, Connection connection) throws S
 
 
     private static void retrieve(Connection conn) throws SQLException {
-        String sql = "SELECT b.name, b.quantity, a.name AS author_name, " +
+        String sql = "SELECT b.book_title, b.book_stock, a.author_name AS author_name, " +
                 "COALESCE(SUM(o.order_quantity), 0) AS total_orders_quantity " +
                 "FROM Books b " +
                 "LEFT JOIN Authors a ON b.author_id = a.author_id " +
                 "LEFT JOIN Orders o ON b.book_id = o.book_id " +
-                "GROUP BY b.name, a.name, b.quantity";
+                "GROUP BY b.book_title, a.author_name, b.book_stock";
 
 
         System.out.println("Displaying all books with associated orders and authors:");
         try (PreparedStatement pstmt = conn.prepareStatement(sql);
              ResultSet rs = pstmt.executeQuery()) {
             while (rs.next()) {
-                String bookName = rs.getString("name");
+                String bookName = rs.getString("book_title");
                 String authorName = rs.getString("author_name");
-                String quantity = rs.getString("quantity");
+                String quantity = rs.getString("book_stock");
                 String orderInfo = rs.getString("total_orders_quantity");
                 System.out.println("Book: " + bookName + ", Quantity " + quantity + ", Author: " + authorName + ", Order Quantity: " + orderInfo);
             }
@@ -185,8 +183,8 @@ private static void updateBook(Scanner scanner, Connection connection) throws SQ
     System.out.print("Enter new quantity (enter 0 to skip): ");
     int newQuantity = Integer.parseInt(scanner.nextLine());
 
-    String updateQuery = "UPDATE Books SET name = COALESCE(NULLIF(?, ''), name), " +
-            "quantity = COALESCE(NULLIF(?, 0), quantity) WHERE book_id = ?";
+    String updateQuery = "UPDATE Books SET book_title = COALESCE(NULLIF(?, ''), book_title), " +
+            "book_stock = COALESCE(NULLIF(?, 0), book_stock) WHERE book_id = ?";
     try (PreparedStatement preparedStatement = connection.prepareStatement(updateQuery)) {
         preparedStatement.setString(1, newName);
         preparedStatement.setInt(2, newQuantity);
