@@ -1,0 +1,31 @@
+CREATE TABLE Authors (
+    author_id INT PRIMARY KEY,
+    author_name text
+);
+
+
+CREATE TABLE Books (
+    book_id INT PRIMARY KEY,
+    book_title text,
+    book_stock INT,
+    author_id INT,
+    FOREIGN KEY (author_id) REFERENCES Authors(author_id)
+);
+
+
+
+CREATE TABLE Customers (
+    customer_id INT PRIMARY KEY,
+    customer_name text
+);
+
+
+CREATE TABLE Orders (
+    order_id INT PRIMARY KEY,
+    payment_amount INT,
+    customer_id INT,
+    book_id INT,
+    order_quantity INT,
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id),
+    FOREIGN KEY (book_id) REFERENCES Books(book_id)
+);
