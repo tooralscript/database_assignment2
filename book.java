@@ -3,7 +3,7 @@ import java.util.Scanner;
 
 public class bookstore {
 
-    private static final String DATABASE_URL = "jdbc:postgresql://localhost:5433/turalhasanov";
+    private static final String DATABASE_URL = "jdbc:postgresql://localhost:5433/new_one";
     private static final String DB_USER = "turalhasanov";
     private static final String DB_PASSWORD = "";
 
@@ -119,15 +119,15 @@ private static void addCustomer(Scanner scanner, Connection connection) throws S
         int orderQuantity = Integer.parseInt(scanner.nextLine());
 
         String insertOrderSql = "INSERT INTO Orders (order_id, payment_amount, customer_id, book_id, order_quantity) VALUES (?, ?, ?, ?, ?)";
-        String checkStockSql = "SELECT order_quantity FROM Books WHERE book_id = ?";
-        String updateQuantitySql = "UPDATE Books SET order_quantity = order_quantity - ? WHERE book_id = ?";
+        String checkStockSql = "SELECT book_stock FROM Books WHERE book_id = ?";
+        String updateQuantitySql = "UPDATE Books SET book_stock = book_stock - ? WHERE book_id = ?";
 
         try (PreparedStatement checkStockStmt = connection.prepareStatement(checkStockSql)) {
 
             checkStockStmt.setInt(1, bookId);
             ResultSet resultSet = checkStockStmt.executeQuery();
 
-            if (!resultSet.next() || resultSet.getInt("quantity") < orderQuantity) {
+            if (!resultSet.next() || resultSet.getInt("book_stock") < orderQuantity) {
                 throw new SQLException("There is not enough stock for this book");
             }
         }
